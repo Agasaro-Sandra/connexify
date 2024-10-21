@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    /* Safari and Chrome */
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+    color: #404040;
+  }
+  
+  body::-webkit-scrollbar {
+    display: none;
+  }
