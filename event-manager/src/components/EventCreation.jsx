@@ -19,6 +19,7 @@ const EventCreation = () => {
     contact: '',
     standardTicket: '',
     premiumTicket: '',
+    ticketNumber: '',
     paymentMode: '',
   });
 
@@ -77,50 +78,124 @@ const EventCreation = () => {
     }
   };
 
+  
+
   // Helper function to check if a step is completed
   const isStepCompleted = (step) => {
     return completedSteps.includes(step);
   };
 
-  // Function to submit the form data to the backend
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission
-    if (validateStep()) {
-      try {
-        const response = await fetch('http://localhost:5000/api/events', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            title: formData.title,
-            description: formData.description,
-            date: formData.date,
-            time: formData.time,
-            address: formData.address,
-            // keywords: formData.keywords,
-            companyName: formData.companyName,
-            companyAddress: formData.companyAddress,
-            contact: formData.contact,
-            standardTicket: formData.standardTicket,
-            premiumTicket: formData.premiumTicket,
-            paymentMode: formData.paymentMode,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create event');
-        }
-
-        const result = await response.json();
-        console.log('Event created successfully:', result);
-        // Optionally, reset the form or navigate to another page here
-      } catch (error) {
-        console.error('Error creating event:', error);
+  // In handleEventSubmit
+  const handleEventSubmit = async (eventData) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventData),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to create event');
       }
+  
+      // Parse the JSON response to get the event data, including the event ID
+      const result = await response.json();
+      console.log('Event created successfully:', result);
+      return result.event.id; // Return the event ID to be used in subsequent requests
+    } catch (error) {
+      console.error('Error creating event:', error);
+      throw error; // Re-throw to handle in main function
+    }
+  };
+  
+
+
+  // Submit Host Data
+  const handleHostSubmit = async (hostData) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/hosts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(hostData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create host');
+      }
+
+      const result = await response.json();
+      console.log('Host created successfully:', result);
+    } catch (error) {
+      console.error('Error creating host:', error);
     }
   };
 
+  // Submit Payment Data
+  const handlePaymentSubmit = async (paymentData) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment');
+      }
+
+      const result = await response.json();
+      console.log('Payment created successfully:', result);
+    } catch (error) {
+      console.error('Error creating payment:', error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent default form submission
+    
+    if (validateStep()) {
+      try {
+        // 1. Submit event data and retrieve event ID
+        const eventId = await handleEventSubmit({
+          title: formData.title,
+          description: formData.description,
+          date: formData.date,
+          time: formData.time,
+          address: formData.address,
+        });
+  
+        if (!eventId) throw new Error("Event ID not received");
+  
+        // 2. Use the retrieved eventId for host submission
+        const hostResponse = await handleHostSubmit({
+          companyName: formData.companyName,
+          companyAddress: formData.companyAddress,
+          contact: formData.contact,
+          eventId: eventId, // Use the eventId here
+        });
+  
+        if (!hostResponse) throw new Error("Host data submission failed");
+  
+        // 3. Use the retrieved eventId for payment submission
+        const paymentResponse = await handlePaymentSubmit({
+          standardTicket: formData.standardTicket,
+          premiumTicket: formData.premiumTicket,
+          paymentMode: formData.paymentMode,
+          ticketNumber: formData.ticketNumber,
+          eventId: eventId, // Use the eventId here
+        });
+  
+        if (!paymentResponse) throw new Error("Payment data submission failed");
+  
+        console.log("All data submitted successfully");
+  
+      } catch (error) {
+        console.error("Error in data submission:", error);
+      }
+    }
+  };
+  
+ 
   return (
     <div className='bg-gradient-to-b from-[#677572] to-[#ff9448] h-screen pt-20 w-full text-white'>
       <div className='w-full px-20 mb-20'>
@@ -179,9 +254,12 @@ const EventCreation = () => {
               </div>
 
               <div className='w-full mt-5 flex items-end justify-end'>
-                <button onClick={handleNext} className="bg-[#ff9448] w-40 h-20 flex items-center justify-center rounded-full">
-                  <FaArrowRightLong className="text-black" size={40} />
-                </button>
+              <button
+                onClick={handleNext}
+                className="bg-[#ff9448] w-40 h-20 flex items-center justify-center rounded-full"
+              >
+                <FaArrowRightLong className="text-black" size={40} />
+              </button>
               </div>
             </div>
           </div>
@@ -222,16 +300,26 @@ const EventCreation = () => {
                 <input name="address" value={formData.address} onChange={handleChange} type='text' className="border-collapse bg-transparent outline-none border-b-2 border-white border-opacity-50 mb-8 py-5 w-full" required />
                 {errors.address && <span className="text-red-500">{errors.address}</span>}
 
-                {/* <label className='text-2xl opacity-50'>Keywords</label>
-                <input name="keywords" value={formData.keywords.join(', ')} onChange={(e) => setFormData({ ...formData, keywords: e.target.value.split(', ') })} className="border-collapse bg-transparent outline-none border-b-2 border-white border-opacity-50 mb-8 py-5 w-full" placeholder='keyword1, keyword2...' required />
-                {errors.keywords && <span className="text-red-500">{errors.keywords}</span>} */}
+                {/*<label className='text-2xl opacity-50'>Keywords</label>
+                  <input
+                    name="keywords"
+                    value={formData.keywords.join(', ')}
+                    onChange={(e) => setFormData({ ...formData, keywords: e.target.value.split(', ') })}
+                    className="border-collapse bg-transparent outline-none border-b-2 border-white border-opacity-50 mb-8 py-5 w-full"
+                  />
+                  {errors.keywords && <span className="text-red-500">{errors.keywords}</span>}
+                */}
+
               </div>
 
               <div className='w-full mb-5 flex items-end justify-between'>
                 <button onClick={handlePrevious} className="bg-transparent border-2 border-white text-white w-40 h-20 flex items-center justify-center rounded-full">
                   Back
                 </button>
-                <button onClick={handleNext} className="bg-[#ff9448] w-40 h-20 flex items-center justify-center rounded-full">
+                <button
+                  onClick={handleNext}
+                  className="bg-[#ff9448] w-40 h-20 flex items-center justify-center rounded-full"
+                >
                   <FaArrowRightLong className="text-black" size={40} />
                 </button>
               </div>
@@ -259,6 +347,10 @@ const EventCreation = () => {
                 <label className='text-2xl opacity-50'>Premium Ticket Price</label>
                 <input name="premiumTicket" value={formData.premiumTicket} onChange={handleChange} className="border-collapse bg-transparent outline-none border-b-2 border-white border-opacity-50 mb-8 py-5 w-full" required />
                 {errors.premiumTicket && <span className="text-red-500">{errors.premiumTicket}</span>}
+
+                <label className='text-2xl opacity-50'>Number of Tickets </label>
+                <input name="ticketNumber" value={formData.ticketNumber} onChange={handleChange} className="border-collapse bg-transparent outline-none border-b-2 border-white border-opacity-50 mb-8 py-5 w-full" required />
+                {errors.ticketNumber && <span className="text-red-500">{errors.ticketNumber}</span>}
 
                 <label className='text-2xl opacity-50'>Payment Mode</label>
                 <select name="paymentMode" value={formData.paymentMode} onChange={handleChange} className="border-collapse bg-transparent outline-none border-b-2 border-white border-opacity-50 mb-8 py-5 w-full" required>

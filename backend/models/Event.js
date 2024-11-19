@@ -1,45 +1,46 @@
-module.exports = (sequelize, DataTypes) => {
-  const Event = sequelize.define('Event', {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    title: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-      unique: true,
-    },
-    description: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-    },
-    date: {
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-    time: {
-      type: DataTypes.TIME,
-      allowNull: false,
-    },
-    address: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-    },
-    hostId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'EventHost', // The name of the model or table it references
-        key: 'id',
-      },
-    }
-  }, {
-    tableName: 'events',
-    timestamps: false,
-  });
+const { Model, DataTypes } = require('sequelize');
+const sequelize = require('../config/database'); // Update path if needed
 
-  // Return the model
-  return Event;
-};
+class Event extends Model {
+  static associate(models) {
+    // Define association with EventHost model
+    Event.belongsTo(models.EventHost, { foreignKey: 'hostId', as: 'host' });
+  }
+}
 
+// Initialize the Event model with fields and options
+Event.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  },
+  title: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    unique: true,
+  },
+  description: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+  },
+  date: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
+  time: {
+    type: DataTypes.TIME,
+    allowNull: false,
+  },
+  address: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+  },
+}, {
+  sequelize,              // Pass the Sequelize instance
+  modelName: 'Event',     // Model name in Sequelize
+  tableName: 'events',    // Specify table name
+  timestamps: false,      // Disable createdAt and updatedAt timestamps
+});
+
+module.exports = Event;

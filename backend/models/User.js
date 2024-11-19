@@ -1,7 +1,10 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); // Update the path according to your project structure
+const { Model, DataTypes } = require('sequelize');
+const sequelize = require('../config/database'); // Update the path if needed
 
-const User = sequelize.define('User', {
+class User extends Model {}
+
+// Initialize the User model with fields and options
+User.init({
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
@@ -22,8 +25,12 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
 }, {
-  tableName: 'users', // Specify the name of the table in the database
-  timestamps: false, // Set to true if you want to add createdAt and updatedAt fields
+  sequelize,           // Pass the Sequelize instance
+  modelName: 'User',   // Model name in Sequelize
+  tableName: 'users',  // Specify table name
+  timestamps: false,   // Disable createdAt and updatedAt
+  underscored: true,   // Use snake_case columns if preferred
+  freezeTableName: true, // Prevent Sequelize from pluralizing table names
 });
 
 module.exports = User;

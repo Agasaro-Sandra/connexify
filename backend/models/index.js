@@ -6,32 +6,25 @@ const sequelize = require('../config/database'); // Ensure this points to your D
 const db = {};
 
 // Read all files in the current directory, filter out index.js
-fs
-  .readdirSync(__dirname)
+fs.readdirSync(__dirname)
   .filter(file => {
-    return (file.indexOf('.') !== 0) && (file !== path.basename(__filename)) && (file.slice(-3) === '.js');
+    return (
+      file.indexOf('.') !== 0 &&
+      file !== path.basename(__filename) &&
+      file.slice(-3) === '.js'
+    );
   })
   .forEach(file => {
-    // Use 'require' to import each model, and invoke the exported function with sequelize and DataTypes
-    const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
-    db[model.name] = model; // Add the model to the db object
+    // Require each model file as a class-based model
+    const model = require(path.join(__dirname, file));
+    db[model.name] = model; // Register model by its name in the db object
   });
 
-// Define associations, if any
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {
-    db[modelName].associate(db); // Set up model associations
+    db[modelName].associate(db);
   }
 });
-
-// Sync models after associations
-sequelize.sync({ alter: true })
-  .then(() => {
-    console.log('All tables synced successfully');
-  })
-  .catch(error => {
-    console.error('Error syncing tables:', error);
-  });
 
 // Export the sequelize instance and models
 db.sequelize = sequelize;

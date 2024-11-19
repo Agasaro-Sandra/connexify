@@ -3,9 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2/promise');
 require('dotenv').config();
-const { Event, Host, Payment } = require('../models');
-const EventHost = require('../models/EventHost');
-const PaymentDetails = require('../models/PaymentDetails');
+const { Event, EventHost, PaymentDetails } = require('../models');
 
 const router = express.Router();
 
@@ -86,7 +84,7 @@ router.post('/events', async (req, res) => {
     }
 
     // Create a new event using the Sequelize model
-    const newEvent = await EventHost.create({
+    const newEvent = await Event.create({
       title,
       description,
       date,
@@ -94,6 +92,7 @@ router.post('/events', async (req, res) => {
       address,
     });
 
+    // Return the created event along with its ID
     res.status(201).json({ message: 'Event added successfully', event: newEvent });
   } catch (error) {
     console.error(error);
@@ -134,11 +133,11 @@ router.post('/hosts', async (req, res) => {
 
 // Add Payment Route
 router.post('/payments', async (req, res) => {
-  const { standardTicket, premiumTikcet, paymentMode, eventId } = req.body;
+  const { standardTicket, premiumTicket, ticketNumber, paymentMode, eventId } = req.body;
 
   try {
     // Validate required fields
-    if (!standardTicket|| !premiumTikcet || !paymentMode || !eventId) {
+    if (!standardTicket|| !premiumTicket || !ticketNumber || !paymentMode || !eventId) {
       return res.status(400).json({ message: 'Please provide standardTicket paymentMethod, and eventId.' });
     }
 
@@ -151,7 +150,8 @@ router.post('/payments', async (req, res) => {
     // Create a new payment using the Sequelize model
     const newPayment = await PaymentDetails.create({
       standardTicket,
-      premiumTikcet,
+      premiumTicket,
+      ticketNumber,
       paymentMode,
       eventId, // Associate the payment with the event
     });
