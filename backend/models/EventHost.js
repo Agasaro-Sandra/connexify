@@ -15,11 +15,11 @@ EventHost.init({
     autoIncrement: true,
     primaryKey: true,
   },
-  companyName: {
+  company_name: {
     type: DataTypes.STRING(255),
     allowNull: false,
   },
-  companyAddress: {
+  company_address: {
     type: DataTypes.STRING(255),
     allowNull: false,
   },
@@ -32,6 +32,7 @@ EventHost.init({
   modelName: 'EventHost', // Model name in Sequelize
   tableName: 'event_host', // Specify table name
   timestamps: false,      // Disable createdAt and updatedAt timestamps
+  underscored: true
 });
 
 module.exports = EventHost;

@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2/promise');
 require('dotenv').config();
-const { Event, EventHost, PaymentDetails } = require('../models');
 
 const router = express.Router();
 
@@ -73,95 +72,60 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Add Event Route
-router.post('/events', async (req, res) => {
-  const { title, description, date, time, address } = req.body;
+
+// SignUp Route
+router.post('/signup', async (req, res) => {
+  const { client_name, client_email, client_password } = req.body;
 
   try {
-    // Validate required fields
-    if (!title || !date || !time || !address) {
-      return res.status(400).json({ message: 'Please provide title, date, time, and address.' });
+    // Check if client already exists
+    const [existingUser] = await pool.query('SELECT * FROM clients WHERE client_email = ?', [client_email]);
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: 'Client already exists' });
     }
 
-    // Create a new event using the Sequelize model
-    const newEvent = await Event.create({
-      title,
-      description,
-      date,
-      time,
-      address,
-    });
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(client_password, 10);
 
-    // Return the created event along with its ID
-    res.status(201).json({ message: 'Event added successfully', event: newEvent });
+    // Insert the new user into the database
+    await pool.query('INSERT INTO clients (client_name, client_email, client_password) VALUES (?, ?, ?)', [client_name, client_email, hashedPassword]);
+
+    // Retrieve the newly created user's ID
+    const [newUser] = await pool.query('SELECT id FROM clients WHERE client_email = ?', [client_email]);
+
+    // Create a JWT token
+    const token = jwt.sign({ userId: newUser[0].id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.status(201).json({ token });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Add Host Route
-router.post('/hosts', async (req, res) => {
-  const { companyName, companyAddress, contact, eventId } = req.body;
+// Enter Route
+router.post('/enter', async (req, res) => {
+  const { client_email, client_password } = req.body;
 
   try {
-    // Validate required fields
-    if (!companyName || !companyAddress || !contact || !eventId) {
-      return res.status(400).json({ message: 'Please provide companyName, contact, and eventId.' });
+    // Check if client exists
+    const [user] = await pool.query('SELECT * FROM clients WHERE client_email = ?', [client_email]);
+    if (user.length === 0) {
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Ensure the event exists before adding the host
-    const event = await Event.findByPk(eventId);
-    if (!event) {
-      return res.status(404).json({ message: 'Event not found' });
+    // Check if the password is valid
+    const isPasswordValid = await bcrypt.compare(client_password, user[0].client_password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Create a new host using the Sequelize model
-    const newHost = await EventHost.create({
-      companyName,
-      companyAddress,
-      contact,
-      eventId, // Associate the host with the event
-    });
-
-    res.status(201).json({ message: 'Host added successfully', host: newHost });
+    // Create a JWT token
+    const token = jwt.sign({ userId: user[0].id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-// Add Payment Route
-router.post('/payments', async (req, res) => {
-  const { standardTicket, premiumTicket, ticketNumber, paymentMode, eventId } = req.body;
-
-  try {
-    // Validate required fields
-    if (!standardTicket|| !premiumTicket || !ticketNumber || !paymentMode || !eventId) {
-      return res.status(400).json({ message: 'Please provide standardTicket paymentMethod, and eventId.' });
-    }
-
-    // Ensure the event exists before adding the payment
-    const event = await Event.findByPk(eventId);
-    if (!event) {
-      return res.status(404).json({ message: 'Event not found' });
-    }
-
-    // Create a new payment using the Sequelize model
-    const newPayment = await PaymentDetails.create({
-      standardTicket,
-      premiumTicket,
-      ticketNumber,
-      paymentMode,
-      eventId, // Associate the payment with the event
-    });
-
-    res.status(201).json({ message: 'Payment added successfully', payment: newPayment });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 
 module.exports = router;

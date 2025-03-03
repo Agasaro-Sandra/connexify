@@ -15,7 +15,7 @@ PaymentDetails.init({
     autoIncrement: true,
     primaryKey: true,
   },
-  eventId: { // Foreign key to Event
+  event_id: { // Foreign key to Event
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
@@ -23,19 +23,19 @@ PaymentDetails.init({
       key: 'id',
     },
   },
-  standardTicket: {
+  standard_ticket: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
-  premiumTicket: {
+  premium_ticket: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
-  ticketNumber: {
+  ticket_number: {
     type: DataTypes.DECIMAL(10, 2), 
     allowNull: false,
   },
-  paymentMode: {
+  payment_mode: {
     type: DataTypes.STRING(100),
     allowNull: false,
   },
@@ -43,7 +43,9 @@ PaymentDetails.init({
   sequelize,             // Pass the Sequelize instance
   modelName: 'PaymentDetails', // Model name in Sequelize
   tableName: 'payment_details', // Specify table name
-  timestamps: false,     // Disable createdAt and updatedAt timestamps
+  timestamps: true,     // Disable createdAt and updatedAt timestamps
+  underscored: true,
+  freezeTableName: true,
 });
 
 module.exports = PaymentDetails;

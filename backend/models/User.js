@@ -28,7 +28,9 @@ User.init({
   sequelize,           // Pass the Sequelize instance
   modelName: 'User',   // Model name in Sequelize
   tableName: 'users',  // Specify table name
-  timestamps: false,   // Disable createdAt and updatedAt
+  timestamps: true,   // Disable createdAt and updatedAt
+  // createdAt: 'created_at',
+  // updatedAt: 'updated_at',
   underscored: true,   // Use snake_case columns if preferred
   freezeTableName: true, // Prevent Sequelize from pluralizing table names
 });
